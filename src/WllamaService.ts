@@ -50,8 +50,12 @@ export class WllamaService {
     try {
       onProgress?.(10);
 
+      // AssetsPathConfig requires `default` — this is the key the
+      // Wllama runtime actually reads (confirmed against the real
+      // @wllama/wllama@3.5.1 implementation, not just its docs).
+      // No `as any` needed: this shape is type-correct as written.
       const configPaths = { default: this.config.wasmPath };
-      this.wllama = new Wllama(configPaths as any);
+      this.wllama = new Wllama(configPaths);
       onProgress?.(30);
 
       await this.storeInCache(file);
@@ -69,9 +73,10 @@ export class WllamaService {
       onProgress?.(100);
 
       return { success: true, usedWebGPU: hasWebGPU };
-    } catch (e: any) {
+    } catch (e: unknown) {
       await this.unload();
-      return { success: false, error: e.message };
+      const message = e instanceof Error ? e.message : 'Failed to load model';
+      return { success: false, error: message };
     }
   }
 
@@ -102,19 +107,28 @@ export class WllamaService {
         text,
         timeMs: Math.round(performance.now() - t0),
       };
-    } catch (e: any) {
-      return { success: false, error: e.message || 'Generation failed' };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Generation failed';
+      return { success: false, error: message };
     }
   }
 
   /** Unload the current model and free memory */
   async unload(): Promise<void> {
     if (this.wllama) {
-      try { await (this.wllama as any).exit(); } catch (_) {}
+      try {
+        await (this.wllama as any).exit();
+      } catch (_) {
+        /* ignore */
+      }
       this.wllama = null;
     }
     if (this.modelName) {
-      try { await this.deleteFromCache(this.modelName); } catch (_) {}
+      try {
+        await this.deleteFromCache(this.modelName);
+      } catch (_) {
+        /* ignore */
+      }
       this.modelName = '';
     }
   }
@@ -132,9 +146,12 @@ export class WllamaService {
   private async storeInCache(file: File): Promise<void> {
     const url = `${window.location.origin}/wllama-local-models/${file.name}`;
     const cache = await caches.open('wllama-local-models');
-    await cache.put(url, new Response(file, {
-      headers: { 'Content-Type': 'application/octet-stream' },
-    }));
+    await cache.put(
+      url,
+      new Response(file, {
+        headers: { 'Content-Type': 'application/octet-stream' },
+      }),
+    );
   }
 
   private async deleteFromCache(fileName: string): Promise<void> {

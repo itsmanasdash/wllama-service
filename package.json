@@ -1,6 +1,6 @@
 {
   "name": "wllama-service",
-  "version": "1.0.2",
+  "version": "2.0.4",
   "description": "Framework-agnostic browser LLM service wrapper with WebGPU and WebAssembly support",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -19,6 +19,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -31,11 +32,10 @@
     "gguf"
   ],
   "license": "MIT",
-  "peerDependencies": {
-    "@wllama/wllama": ">=3.0.0"
+  "dependencies": {
+    "@wllama/wllama": "^3.5.1"
   },
   "devDependencies": {
-    "@wllama/wllama": "^3.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   }
