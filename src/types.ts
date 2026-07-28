@@ -14,6 +14,8 @@ export interface GenerateRequest {
   temperature?: number;
   topK?: number;
   topP?: number;
+  stop?: string | string[];
+  abortSignal?: AbortSignal;
 }
 
 export interface GenerateResult {
